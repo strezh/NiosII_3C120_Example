@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Function Inputs
+# variant options - MAXIMUM_MMU, DEFAULT_MMU, NO_MMU
+# system_type options - DEVELOPMENT, QUALIFICATION
+function build_system {
+    VARIANT=${1}
+    SYSTEM_TYPE=${2}
+
+	if [ ${SYSTEM_TYPE} == "DEVELOPMENT" ] ; then
+		OUTDIR=${VARIANT}_DEV
+    elif [ ${SYSTEM_TYPE} == "QUALIFICATION" ] ; then
+		OUTDIR=${VARIANT}_QUAL
+    fi
+    
+    echo "Variant ${VARIANT}"
+
+    #create output dir
+    rm -Rf ${OUTDIR}
+    mkdir ${OUTDIR}
+    cp -R src/* ./${OUTDIR}
+    pushd ${OUTDIR}/build_scripts
+    
+    ./create-this-hardware ${VARIANT} ${SYSTEM_TYPE}
+    
+    popd
+}
+
+#no mmu - development
+build_system NO_MMU DEVELOPMENT
+
+#default mmu - development
+build_system DEFAULT_MMU DEVELOPMENT
+
+#maximum mmu - development
+build_system MAXIMUM_MMU DEVELOPMENT
+
+#no mmu - qualification
+build_system NO_MMU QUALIFICATION
+
+#default mmu - qualification
+build_system DEFAULT_MMU QUALIFICATION
+
+#maximum mmu - qualification
+build_system MAXIMUM_MMU QUALIFICATION

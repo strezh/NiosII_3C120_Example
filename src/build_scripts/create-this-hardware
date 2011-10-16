@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# variant options - MAXIMUM_MMU, DEFAULT_MMU, NO_MMU
+# system_type options - DEVELOPMENT, QUALIFICATION
+
+VARIANT=${1}
+SYSTEM_TYPE=${2}
+PROJECT_NAME="nios2_linux_3c120_125mhz"
+INITIAL_PROJECT_SETTINGS="initial_project_assignments.tcl"
+SOPC_BUILDER_SYSTEM_CONTENTS="sopc_system.tcl"
+PIN_ASSIGNMENTS="pin_assignments.tcl"
+POST_PROJECT_ASSIGNMENTS="post_project_assignments.tcl"
+SCRIPTS_DIR="build_scripts"
+
+#
+# validate the input arguments
+#
+if [ ${VARIANT} != "MAXIMUM_MMU" ] ; then
+	if [ ${VARIANT} != "DEFAULT_MMU" ] ; then
+		if [ ${VARIANT} != "NO_MMU" ] ; then
+			echo ""
+			echo "ERROR: variant option must be specified as MAXIMUM_MMU, DEFAULT_MMU or NO_MMU"
+			echo ""
+			echo "USAGE: ./create-this-hardware <variant> <system_type>"
+			echo ""
+			exit 1
+		fi 
+	fi 
+fi 
+
+if [ ${SYSTEM_TYPE} != "DEVELOPMENT" ] ; then
+	if [ ${SYSTEM_TYPE} != "QUALIFICATION" ] ; then
+		echo ""
+		echo "ERROR: system_type option must be specified as DEVELOPMENT or QUALIFICATION"
+		echo ""
+		echo "USAGE: ./create-this-hardware <variant> <system_type>"
+		echo ""
+		exit 1
+	fi 
+fi 
+
+#
+# move up one directory into the Quartus project directory
+#
+cd ..
+
+#
+# Step 1 - create the Quartus project and initialize the settings.
+#
+echo ""
+echo "Creating Quartus II project and initializing settings..."
+echo ""
+quartus_sh -t ${SCRIPTS_DIR}/qts_create_project.tcl ${PROJECT_NAME} ${SCRIPTS_DIR}/${INITIAL_PROJECT_SETTINGS} || {
+    echo ""
+    echo "ERROR - could not create Quartus II project and initialize it."
+    echo ""
+    exit 1
+}
+
+#
+# Step 2 - create and generate SOPC Builder system.
+#
+echo ""
+echo "Creating SOPC Builder system and generating it..."
+echo ""
+sopc_builder --cmd="set variant ${VARIANT} ; set system_type ${SYSTEM_TYPE} ; set project_name ${PROJECT_NAME}" --script=${SCRIPTS_DIR}/${SOPC_BUILDER_SYSTEM_CONTENTS} --generate
+
+#
+# since the sopc_builder return code isn't simply ZERO for success, we'll look
+# for one of the last files that we expect him to generate to indicate success
+#
+if [ ! -f ./${PROJECT_NAME}_sys_sopc.v ]; then
+    echo ""
+    echo "ERROR - could not create SOPC Builder system and generate it."
+    echo ""
+    exit 1
+fi
+
+#
+# Step 3 - apply post SOPC Builder settings to project.
+#
+echo ""
+echo "Applying post SOPC Builder settings to project..."
+echo ""
+quartus_sh -t ${SCRIPTS_DIR}/qts_post_sopc_gen_project_settings.tcl ${PROJECT_NAME} ${SYSTEM_TYPE} ${SCRIPTS_DIR}/${PIN_ASSIGNMENTS} ${SCRIPTS_DIR}/${POST_PROJECT_ASSIGNMENTS} || {
+    echo ""
+    echo "ERROR - could not apply post SOPC Builder settings to project."
+    echo ""
+    exit 1
+}
+
+if [ ${SYSTEM_TYPE} == "DEVELOPMENT" ] ; then
+	#
+	# Step 3a - build the display controller software.
+	#
+	pushd ./display_controller_software/display_controller/app
+	./create-this-app --cpu-name display_cpu
+	make mem_init_install
+	popd
+fi
+
+#
+# Step 4 - compile the hardware project.
+#
+echo ""
+echo "Compiling Quartus II hardware project..."
+echo ""
+quartus_sh -t ${SCRIPTS_DIR}/qts_compile_project.tcl ${PROJECT_NAME} || {
+    echo ""
+    echo "ERROR - could not compile hardware project."
+    echo ""
+    exit 1
+}
+
+#
+# Step 5 - check the timing closure report for timing issues.
+#
+if [ ! -f ./${PROJECT_NAME}_top.sta.rpt ]; then
+    echo ""
+    echo "ERROR - Cannot locate the timing report file."
+    echo ""
+    exit 1
+else
+    grep "Critical Warning: Timing requirements not met" ./${PROJECT_NAME}_top.sta.rpt
+    if [ $? -eq 0 ]; then
+        echo ""
+        echo "FAILURE - Timing closure appears to be UNSUCCESSFUL..."
+        echo ""
+        exit 1
+    else
+        echo ""
+        echo "SUCCESS - Timing closure appears to be successful..."
+        echo ""
+    fi
+fi
+
+exit 0
