@@ -51,11 +51,6 @@ do
   shift
 done
 
-# Now we also need to extract the sources for this application to the
-# local directory.
-echo Extracting source files, but not overwriting existing files...
-tar -kxf sources.tar 2> /dev/null
-
 # Now let's extract the Linux CPU configuration data and create a string header
 ./extract_linux_cpu_header.sh "$QUARTUS_PROJECT_DIR$SOPCINFO_FILE"
 if [ $? -ne 0 ] ; then
