@@ -656,7 +656,7 @@ if { $system_type == "DEVELOPMENT" } {
 	set_parameter ddr2_hi_latency_128m dll_external "false"
 	set_parameter ddr2_hi_latency_128m mem_tcl_15_fmax "533.0"
 	set_parameter ddr2_hi_latency_128m mem_tcl_30_fmax "200.0"
-	set_parameter ddr2_hi_latency_128m mem_bl "4"
+	set_parameter ddr2_hi_latency_128m mem_bl "8"
 	set_parameter ddr2_hi_latency_128m ac_clk_select "90"
 	set_parameter ddr2_hi_latency_128m mem_tcl_50_fmax "333.333"
 	set_parameter ddr2_hi_latency_128m mem_tcl_25_fmax "533.0"
