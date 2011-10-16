@@ -1,0 +1,12 @@
+The NiosII_3C120_Example is a clone of original release Nios II design example for Altera 3C120 development Board (http://www.alterawiki.com/wiki/Nios_II_3C120_Design_Example).
+
+The initial version (http://www.alterawiki.com/uploads/1/1c/20090508a_nios2_linux_3c120_125mhz.tar.gz) contains errors and cannot be compiled (with "DEVELOPMENT" option) without some corrections.
+
+Tools:
+- Altera Quartus II 11.0 and 11.0sp1
+
+
+
+
+
+
